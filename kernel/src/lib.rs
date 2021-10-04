@@ -1,19 +1,19 @@
+#![feature(asm)]
 #![no_std]
 #![no_main]
 
+use crate::terminal::Terminal;
 use core::panic::PanicInfo;
+
+mod io;
+mod terminal;
 
 #[no_mangle]
 pub extern "C" fn kmain() -> ! {
-    let vga_buffer = 0xb8000 as *mut u8;
-
-    for (i, &byte) in b"LisibleOS Hello world".iter().enumerate() {
-        unsafe {
-            *vga_buffer.offset(i as isize * 2) = byte;
-            *vga_buffer.offset(i as isize * 2 + 1) = 0xb;
-        }
-    }
-
+    let mut terminal = Terminal::new();
+    terminal.clear();
+    terminal.put_string(b"LisibleOS\n");
+    terminal.put_string(b"> ");
     loop {}
 }
 
