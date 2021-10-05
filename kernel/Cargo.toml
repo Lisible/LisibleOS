@@ -10,3 +10,5 @@ edition = "2018"
 [lib]
 crate-type = ["staticlib"]
 
+[dependencies]
+compiler_builtins = { version = "0.1.50", features = ["mem"] }

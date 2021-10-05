@@ -13,9 +13,9 @@ target/kernel.o: target/boot.o target/i686-lisibleos/release/libkernel.a
 
 target/i686-lisibleos/release/libkernel.a:
 	mkdir -p target
-	xargo build -p kernel --target i686-lisibleos --release
+	RUST_TARGET_PATH=$(shell pwd) xargo build -p kernel --target i686-lisibleos --release
 
 clean:
-	xargo clean --target i686-lisibleos
+	RUST_TARGET_PATH=$(shell pwd) xargo clean --target i686-lisibleos
 	rm target/kernel.o target/boot.o target/i686-lisibleos/debug/libkernel.a
 	rm target/kernel.o target/boot.o target/i686-lisibleos/release/libkernel.a

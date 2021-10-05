@@ -1,4 +1,5 @@
 use crate::io;
+use compiler_builtins::mem::memcpy;
 
 const VGA_BUFFER_POINTER: *mut u8 = 0xb8000 as *mut u8;
 const VGA_BUFFER_SIZE: u16 = 4000;
@@ -28,15 +29,17 @@ impl Terminal {
 
     pub fn put_char(&mut self, c: u8) {
         if c == b'\n' {
-            self.current_row += 1;
-            if self.current_row == ROW_COUNT {
-                self.current_row = 0;
+            if self.current_row < ROW_COUNT - 1 {
+                self.current_row += 1;
+            } else {
+                self.scroll_y(-1);
             }
 
             self.current_col = 0;
             return;
         }
 
+        /// Safety: This is safe because VGA_BUFFER_POINTER points toward the VGA character buffer
         unsafe {
             *VGA_BUFFER_POINTER.offset(
                 ((self.current_col as isize + self.current_row as isize * COL_COUNT as isize)
@@ -48,30 +51,61 @@ impl Terminal {
 
     fn compute_current_position(&mut self) {
         if self.current_col == COL_COUNT - 1 {
-            if self.current_row == ROW_COUNT - 1 {
-                self.current_col = 0;
-                self.current_row = 0;
-            } else {
+            if self.current_row != ROW_COUNT - 1 {
                 self.current_row = (self.current_row + 1) % ROW_COUNT;
+            } else {
+                self.scroll_y(-1);
             }
+            self.current_col = 0;
+        } else {
+            self.current_col = (self.current_col + 1) % COL_COUNT;
         }
-        self.current_col = (self.current_col + 1) % COL_COUNT;
+    }
+
+    fn scroll_y(&mut self, y: i8) {
+        // Safety:
+        // The starting pointer is in bound because it's the VGA character buffer pointer
+        // The end pointer isn't past the VGA character buffer pointer
+        // The offset doesn't overflow isize
+        // The offset doesn't rely on wrapping around the address space
+        let src = unsafe { VGA_BUFFER_POINTER.offset(COL_COUNT as isize * VALUE_SIZE as isize) };
+        let dest = VGA_BUFFER_POINTER;
+        let size = (VGA_BUFFER_SIZE as usize - COL_COUNT as usize) * VALUE_SIZE as usize;
+
+        // Safety:
+        // dest and src are valid pointer to the same object being the VGA character buffer
+        // This copy will not go  past the VGA character buffer
+        unsafe { memcpy(dest, src, size) };
+
+        self.clear_line(ROW_COUNT - 1);
     }
 
     pub fn put_char_at(&mut self, c: u8, row: u8, col: u8) {
         self.current_row = row;
         self.current_col = col;
-        self.put_char(c);
+        unsafe {
+            *VGA_BUFFER_POINTER.offset(
+                ((self.current_col as isize + self.current_row as isize * COL_COUNT as isize)
+                    * VALUE_SIZE as isize),
+            ) = c;
+        }
     }
 
     pub fn clear(&mut self) {
         for row in 0..ROW_COUNT {
-            for col in 0..COL_COUNT {
-                self.put_char_at(b' ', row, col);
-            }
+            self.clear_line(row)
         }
         self.current_col = 0;
         self.current_row = 0;
+    }
+
+    fn clear_line(&mut self, row: u8) {
+        for col in 0..COL_COUNT {
+            self.put_char_at(b' ', row, col);
+        }
+
+        self.current_row = row;
+        self.current_col = 0;
     }
 
     pub fn set_cursor_position(&mut self, row: u8, col: u8) {
