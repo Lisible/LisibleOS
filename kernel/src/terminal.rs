@@ -32,7 +32,7 @@ impl Terminal {
             if self.current_row < ROW_COUNT - 1 {
                 self.current_row += 1;
             } else {
-                self.scroll_y(-1);
+                self.scroll_y();
             }
 
             self.current_col = 0;
@@ -54,7 +54,7 @@ impl Terminal {
             if self.current_row != ROW_COUNT - 1 {
                 self.current_row = (self.current_row + 1) % ROW_COUNT;
             } else {
-                self.scroll_y(-1);
+                self.scroll_y();
             }
             self.current_col = 0;
         } else {
@@ -62,7 +62,7 @@ impl Terminal {
         }
     }
 
-    fn scroll_y(&mut self, y: i8) {
+    fn scroll_y(&mut self) {
         // Safety:
         // The starting pointer is in bound because it's the VGA character buffer pointer
         // The end pointer isn't past the VGA character buffer pointer
@@ -85,8 +85,8 @@ impl Terminal {
         self.current_col = col;
         unsafe {
             *VGA_BUFFER_POINTER.offset(
-                ((self.current_col as isize + self.current_row as isize * COL_COUNT as isize)
-                    * VALUE_SIZE as isize),
+                (self.current_col as isize + self.current_row as isize * COL_COUNT as isize)
+                    * VALUE_SIZE as isize,
             ) = c;
         }
     }
