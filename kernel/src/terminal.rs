@@ -3,13 +3,13 @@ use compiler_builtins::mem::memcpy;
 
 const VGA_BUFFER_POINTER: *mut u8 = 0xb8000 as *mut u8;
 const VGA_BUFFER_SIZE: u16 = 4000;
-const ROW_COUNT: u8 = 25;
-const COL_COUNT: u8 = 80;
-const VALUE_SIZE: u8 = 2;
+const ROW_COUNT: u16 = 25;
+const COL_COUNT: u16 = 80;
+const VALUE_SIZE: u16 = 2;
 
 pub(crate) struct Terminal {
-    current_row: u8,
-    current_col: u8,
+    current_row: u16,
+    current_col: u16,
 }
 
 impl Terminal {
@@ -39,11 +39,10 @@ impl Terminal {
             return;
         }
 
-        /// Safety: This is safe because VGA_BUFFER_POINTER points toward the VGA character buffer
+        // Safety: This is safe because VGA_BUFFER_POINTER points toward the VGA character buffer
         unsafe {
             *VGA_BUFFER_POINTER.offset(
-                ((self.current_col as isize + self.current_row as isize * COL_COUNT as isize)
-                    * VALUE_SIZE as isize),
+                ((self.current_col + self.current_row * COL_COUNT) * VALUE_SIZE) as isize,
             ) = c;
         }
         self.compute_current_position();
@@ -68,25 +67,23 @@ impl Terminal {
         // The end pointer isn't past the VGA character buffer pointer
         // The offset doesn't overflow isize
         // The offset doesn't rely on wrapping around the address space
-        let src = unsafe { VGA_BUFFER_POINTER.offset(COL_COUNT as isize * VALUE_SIZE as isize) };
+        let src = unsafe { VGA_BUFFER_POINTER.offset((COL_COUNT * VALUE_SIZE) as isize) };
         let dest = VGA_BUFFER_POINTER;
-        let size = (VGA_BUFFER_SIZE as usize - COL_COUNT as usize) * VALUE_SIZE as usize;
+        let size = (VGA_BUFFER_SIZE - COL_COUNT) * VALUE_SIZE;
 
         // Safety:
         // dest and src are valid pointer to the same object being the VGA character buffer
         // This copy will not go  past the VGA character buffer
-        unsafe { memcpy(dest, src, size) };
-
+        unsafe { memcpy(dest, src, size as usize) };
         self.clear_line(ROW_COUNT - 1);
     }
 
-    pub fn put_char_at(&mut self, c: u8, row: u8, col: u8) {
+    pub fn put_char_at(&mut self, c: u8, row: u16, col: u16) {
         self.current_row = row;
         self.current_col = col;
         unsafe {
             *VGA_BUFFER_POINTER.offset(
-                (self.current_col as isize + self.current_row as isize * COL_COUNT as isize)
-                    * VALUE_SIZE as isize,
+                ((self.current_col + self.current_row * COL_COUNT) * VALUE_SIZE) as isize,
             ) = c;
         }
     }
@@ -99,7 +96,7 @@ impl Terminal {
         self.current_row = 0;
     }
 
-    fn clear_line(&mut self, row: u8) {
+    fn clear_line(&mut self, row: u16) {
         for col in 0..COL_COUNT {
             self.put_char_at(b' ', row, col);
         }
@@ -108,8 +105,8 @@ impl Terminal {
         self.current_col = 0;
     }
 
-    pub fn set_cursor_position(&mut self, row: u8, col: u8) {
-        let cursor_position: u16 = (row * COL_COUNT + col) as u16;
+    pub fn set_cursor_position(&mut self, row: u16, col: u16) {
+        let cursor_position = row * COL_COUNT + col;
         let address_register = 0x3D4;
         let data_register = 0x3D5;
         unsafe {
