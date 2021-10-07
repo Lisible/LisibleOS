@@ -1,15 +1,15 @@
 use crate::io;
 use compiler_builtins::mem::memcpy;
 
-const VGA_BUFFER_POINTER: *mut u8 = 0xb8000 as *mut u8;
+const VGA_BUFFER_POINTER: *mut u8 = 0xB8000 as *mut u8;
 const VGA_BUFFER_SIZE: u16 = 4000;
-const ROW_COUNT: u16 = 25;
-const COL_COUNT: u16 = 80;
-const VALUE_SIZE: u16 = 2;
+const ROW_COUNT: u8 = 25;
+const COL_COUNT: u8 = 80;
+const VALUE_SIZE: u8 = 2;
 
 pub(crate) struct Terminal {
-    current_row: u16,
-    current_col: u16,
+    current_row: u8,
+    current_col: u8,
 }
 
 impl Terminal {
@@ -67,9 +67,9 @@ impl Terminal {
         // The end pointer isn't past the VGA character buffer pointer
         // The offset doesn't overflow isize
         // The offset doesn't rely on wrapping around the address space
-        let src = unsafe { VGA_BUFFER_POINTER.offset((COL_COUNT * VALUE_SIZE) as isize) };
+        let src = unsafe { VGA_BUFFER_POINTER.offset(COL_COUNT as isize * VALUE_SIZE as isize) };
         let dest = VGA_BUFFER_POINTER;
-        let size = (VGA_BUFFER_SIZE - COL_COUNT) * VALUE_SIZE;
+        let size = (VGA_BUFFER_SIZE - COL_COUNT as u16) * VALUE_SIZE as u16;
 
         // Safety:
         // dest and src are valid pointer to the same object being the VGA character buffer
@@ -78,12 +78,13 @@ impl Terminal {
         self.clear_line(ROW_COUNT - 1);
     }
 
-    pub fn put_char_at(&mut self, c: u8, row: u16, col: u16) {
+    pub fn put_char_at(&mut self, c: u8, row: u8, col: u8) {
         self.current_row = row;
         self.current_col = col;
         unsafe {
             *VGA_BUFFER_POINTER.offset(
-                ((self.current_col + self.current_row * COL_COUNT) * VALUE_SIZE) as isize,
+                (self.current_col as isize + self.current_row as isize * COL_COUNT as isize)
+                    * VALUE_SIZE as isize,
             ) = c;
         }
     }
@@ -96,7 +97,7 @@ impl Terminal {
         self.current_row = 0;
     }
 
-    fn clear_line(&mut self, row: u16) {
+    fn clear_line(&mut self, row: u8) {
         for col in 0..COL_COUNT {
             self.put_char_at(b' ', row, col);
         }
@@ -105,8 +106,8 @@ impl Terminal {
         self.current_col = 0;
     }
 
-    pub fn set_cursor_position(&mut self, row: u16, col: u16) {
-        let cursor_position = row * COL_COUNT + col;
+    pub fn set_cursor_position(&mut self, row: u8, col: u8) {
+        let cursor_position = row as u16 * COL_COUNT as u16 + col as u16;
         let address_register = 0x3D4;
         let data_register = 0x3D5;
         unsafe {

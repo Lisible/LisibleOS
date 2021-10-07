@@ -6,38 +6,20 @@ use crate::terminal::Terminal;
 use core::panic::PanicInfo;
 
 mod io;
+mod serial;
 mod terminal;
 
 #[no_mangle]
 pub extern "C" fn kmain() -> ! {
     let mut terminal = Terminal::new();
     terminal.clear();
-    terminal.put_string(b"1 LisibleOS\n");
-    terminal.put_string(b"2 > \n");
-    terminal.put_string(b"3\n");
-    terminal.put_string(b"4\n");
-    terminal.put_string(b"5\n");
-    terminal.put_string(b"6\n");
-    terminal.put_string(b"7\n");
-    terminal.put_string(b"8\n");
-    terminal.put_string(b"9\n");
-    terminal.put_string(b"10\n");
-    terminal.put_string(b"11\n");
-    terminal.put_string(b"12\n");
-    terminal.put_string(b"13\n");
-    terminal.put_string(b"14\n");
-    terminal.put_string(b"15\n");
-    terminal.put_string(b"16\n");
-    terminal.put_string(b"17\n");
-    terminal.put_string(b"18\n");
-    terminal.put_string(b"19\n");
-    terminal.put_string(b"20\n");
-    terminal.put_string(b"21\n");
-    terminal.put_string(b"22\n");
-    terminal.put_string(b"23\n");
-    terminal.put_string(b"24\n");
-    terminal.put_string(b"25\n");
-    terminal.put_string(b"26");
+    if let Err(_) = serial::initialize_serial_port() {
+        terminal.put_string(b"Serial port initialization failed");
+    } else {
+        terminal.put_string(b"Serial port initialization succeeded");
+    }
+
+    serial::write_bytes(b"This string was sent through the serial port!!");
     loop {}
 }
 
