@@ -2,10 +2,11 @@
 #![no_std]
 #![no_main]
 
-use crate::terminal::Terminal;
 use core::panic::PanicInfo;
 
-mod io;
+use crate::terminal::Terminal;
+
+mod arch;
 mod serial;
 mod terminal;
 

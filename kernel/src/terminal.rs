@@ -1,4 +1,4 @@
-use crate::io;
+use crate::arch::x86::io;
 use compiler_builtins::mem::memcpy;
 
 const VGA_BUFFER_POINTER: *mut u8 = 0xB8000 as *mut u8;

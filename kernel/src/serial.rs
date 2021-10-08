@@ -1,4 +1,4 @@
-use crate::io::{in8, out8};
+use crate::arch::x86::io::{in8, out8};
 use crate::serial::SerialError::SerialPortInitializationFailed;
 
 const COM1_PORT: u16 = 0x3F8;

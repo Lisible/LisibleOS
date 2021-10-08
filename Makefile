@@ -3,7 +3,7 @@ all: target/kernel.o
 clean_run: | clean run
 
 run: target/kernel.o
-	qemu-system-i386 -kernel $< -machine type=pc-i440fx-3.1 -serial stdio
+	qemu-system-i386 -kernel $< -machine type=pc-i440fx-3.1 -serial mon:stdio
 
 target/boot.o: boot/boot.S
 	mkdir -p target
