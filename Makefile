@@ -1,6 +1,8 @@
 all: target/kernel.o
 
-clean_run: | clean run
+.PHONY: clean run
+
+clean_run: clean run
 
 run: target/kernel.o
 	qemu-system-i386 -kernel $< -machine type=pc-i440fx-3.1 -serial mon:stdio
